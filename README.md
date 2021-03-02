@@ -12,4 +12,4 @@ v1.1
 
 
 v1.0
-1. released as ToDoList App for clients to create, read, update and delete TODoList items
+1. released as ToDoList App for clients to create, read, update and delete ToDoList items
