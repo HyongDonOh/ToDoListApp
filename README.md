@@ -9,3 +9,7 @@ v1.1
      2) "
      3) /
      4) \
+
+
+v1.0
+1. released as ToDoList App for clients to create, read, update and delete TODoList items
