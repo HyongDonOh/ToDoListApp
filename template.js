@@ -1,3 +1,5 @@
+var urlencode = require('urlencode'); // prevent error on filename
+
 module.exports = {
   HTML:function(title, list, body, control){
     return `
@@ -20,7 +22,7 @@ module.exports = {
     var list = '<ul>';
     var i = 0;
     while(i < filelist.length){
-      list = list + `<li><a href="/?id=${filelist[i]}">${filelist[i]}</a></li>`;
+      list = list + `<li><a href="/?id=${filelist[i]}">${urlencode.decode(filelist[i])}</a></li>`;
       i = i + 1;
     }
     list = list+'</ul>';

@@ -3,12 +3,13 @@ var fs = require('fs');
 var url = require('url');
 var qs = require('querystring');
 var template = require('./template.js');
-var path = require('path');
-var sanitizeHtml = require('sanitize-html');
+var path = require('path'); // filter path (security)
+var sanitizeHtml = require('sanitize-html'); // filter script (security)
 
+// App name
 var maintitle = 'ToDoList';
+// directory to store TodoList as file
 var datadir = './data/';
-
 
 // create data directory to store ToDoList files
 !fs.existsSync(datadir) && fs.mkdirSync(datadir);
@@ -17,10 +18,15 @@ var datadir = './data/';
 var app = http.createServer(function(request,response){
     var req_url = request.url;
     var queryData = url.parse(req_url, true).query;
+    console.log(queryData);
+    console.log(queryData.id);
     var pathname = url.parse(req_url, true).pathname;
 
+    ////////////////////////////////////////////////////////////////////////////
     // root
+    ////////////////////////////////////////////////////////////////////////////
     if(pathname === '/'){
+      // default(main) page
       if(queryData.id === undefined){
         fs.readdir(datadir, function(error, filelist){
           if (error) {
@@ -30,17 +36,20 @@ var app = http.createServer(function(request,response){
             return;
           }
           var title = '';
-          var description = `Let's create ${maintitle} <br>To read: Click the title`;
+          var description = `<p>Let's create ${maintitle}</p><p>To read: Click the title</p>`;
           var list = template.list(filelist);
           var html = template.HTML(title, list,
-            `<h2>${title}</h2>${description}`,
+            `${description}`,
             `<form><input type=button value='create' onClick="location.href='/create'"></form>`
           );
           response.writeHead(200);
           response.end(html);
         });
       } else {
+        ////////////////////////////////////////////////////////////////////////////
         // read
+        ////////////////////////////////////////////////////////////////////////////
+        console.log("Read..................................................");
         fs.readdir(datadir, function(error, filelist){
           if (error) {
             console.log(error);
@@ -48,7 +57,10 @@ var app = http.createServer(function(request,response){
             response.end('Internal Server Error: read: readdir');
             return;
           }
-          var filteredId = path.parse(queryData.id).base;
+          var filteredId = encodeURIComponent(path.parse(queryData.id).base).replace(/\*/g, "%2A");
+          console.log(queryData.id);
+          console.log(path.parse(queryData.id).base);
+          console.log(encodeURIComponent(path.parse(queryData.id).base).replace(/\*/g, "%2A"));
           fs.readFile(`${datadir}${filteredId}`, 'utf8', function(error, description){
             if (error) {
               console.log(error);
@@ -58,14 +70,16 @@ var app = http.createServer(function(request,response){
             }
             var title = queryData.id;
             var sanitizedTitle = sanitizeHtml(title);
+            console.log(sanitizedTitle);
+            console.log(encodeURIComponent(sanitizedTitle).replace(/\*/g, "%2A"));
             var sanitizedDescription = sanitizeHtml(description);
             var list = template.list(filelist);
             var html = template.HTML('Read: '+sanitizedTitle, list,
               `<h2>${sanitizedTitle}</h2><pre>${sanitizedDescription}</pre>`,
               ` <table><tr><td><form><input type=button value='create' onClick="location.href='/create'"></form></td>
-                <td><form><input type=button value='update' onClick="location.href='/update?id=${sanitizedTitle}'"></form></td>
+                <td><form><input type=button value='update' onClick="location.href='/update?id=${encodeURIComponent(title).replace(/\*/g, "%2A")}'"></form></td>
                 <td><form action="delete_process" method="post">
-                  <input type="hidden" name="id" value="${sanitizedTitle}">
+                  <input type="hidden" name="id" value="${encodeURIComponent(title).replace(/\*/g, "%2A")}">
                   <input type="submit" value="delete">
                 </form></td></tr></table>`
             );
@@ -75,7 +89,10 @@ var app = http.createServer(function(request,response){
         });
       }
     } else if(pathname === '/create'){
+      ////////////////////////////////////////////////////////////////////////////
       // create
+      ////////////////////////////////////////////////////////////////////////////
+      console.log("Create..................................................");
       fs.readdir(datadir, function(error, filelist){
         if (error) {
           console.log(error);
@@ -100,14 +117,18 @@ var app = http.createServer(function(request,response){
         response.end(html);
       });
     } else if(pathname === '/create_process'){
+      ////////////////////////////////////////////////////////////////////////////
       // create process
+      ////////////////////////////////////////////////////////////////////////////
+      console.log("Create Process..................................................");
       var body = '';
       request.on('data', function(data){
           body = body + data;
       });
       request.on('end', function(){
           var post = qs.parse(body);
-          var title = post.title;
+          var title = encodeURIComponent((post.title).replace(/\//g, "").replace(/\\/g, "").replace(/\'/g, "").replace(/\"/g, "")).replace(/\*/g, "%2A")
+          //var title = encodeURIComponent(post.title).replace(/\*/g, "%2A").replace(/\//g, "").replace(/\\/g, "");
           var description = post.description;
           fs.writeFile(`${datadir}${title}`, description, 'utf8', function(error){
             if (error) {
@@ -121,7 +142,10 @@ var app = http.createServer(function(request,response){
           })
       });
     } else if(pathname === '/update'){
+      ////////////////////////////////////////////////////////////////////////////
       // update
+      ////////////////////////////////////////////////////////////////////////////
+      console.log("Update..................................................");
       fs.readdir(datadir, function(error, filelist){
         if (error) {
           console.log(error);
@@ -129,7 +153,7 @@ var app = http.createServer(function(request,response){
           response.end('Internal Server Error: update: readdir');
           return;
         }
-        var filteredId = path.parse(queryData.id).base;
+        var filteredId = encodeURIComponent(path.parse(queryData.id).base).replace(/\*/g, "%2A");
         fs.readFile(`${datadir}${filteredId}`, 'utf8', function(error, description){
           if (error) {
             console.log(error);
@@ -161,15 +185,19 @@ var app = http.createServer(function(request,response){
         });
       });
     } else if(pathname === '/update_process'){
+      ////////////////////////////////////////////////////////////////////////////
       // update process
+      ////////////////////////////////////////////////////////////////////////////
+      console.log("Update Process..................................................");
       var body = '';
       request.on('data', function(data){
           body = body + data;
       });
       request.on('end', function(){
           var post = qs.parse(body);
-          var id = post.id;
-          var title = post.title;
+          var id = encodeURIComponent(post.id).replace(/\*/g, "%2A");
+          //var title = encodeURIComponent(post.title).replace(/\*/g, "%2A");
+          var title = encodeURIComponent((post.title).replace(/\//g, "").replace(/\\/g, "")).replace(/\*/g, "%2A")
           var description = post.description;
           fs.rename(`${datadir}${id}`, `${datadir}${title}`, function(error){
             if (error) {
@@ -191,7 +219,10 @@ var app = http.createServer(function(request,response){
           });
       });
     } else if(pathname === '/delete_process'){
+      ////////////////////////////////////////////////////////////////////////////
       // delete process
+      ////////////////////////////////////////////////////////////////////////////
+      console.log("Delete Process..................................................");
       var body = '';
       request.on('data', function(data){
           body = body + data;
@@ -212,7 +243,9 @@ var app = http.createServer(function(request,response){
           })
       });
     } else {
+      ////////////////////////////////////////////////////////////////////////////
       // page not found
+      ////////////////////////////////////////////////////////////////////////////
       response.writeHead(404);
       response.end('Page Not found : ' + pathname);
     }
