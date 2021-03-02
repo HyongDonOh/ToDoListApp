@@ -13,3 +13,4 @@ v1.1
 
 v1.0
 1. released as ToDoList App for clients to create, read, update and delete ToDoList items
+2. ToDoList App is starting from List page and clients can create new ToDoList with ToDoTitle and ToDoDetail.
